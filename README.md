@@ -1,9 +1,9 @@
 # 🦅 HostHawk Enterprise Network Scanner
 
-[![Python Version](https://img.shields.io/badge/python3.8+blue.svg)](https://www.python.org/downloads/)
-[![License](https://img.shields.io/badge/licenseMITgreen.svg)](LICENSE)
-[![Code Style](https://img.shields.io/badge/code%20styleblack000000.svg)](https://github.com/psf/black)
-[![Docker](https://img.shields.io/badge/dockerreadyblue.svg)](https://www.docker.com/)
+[![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
 
 HostHawk is an enterprisegrade, multithreaded network scanner designed for security professionals and network administrators. It provides comprehensive network discovery, port scanning, service detection, OS fingerprinting, and vulnerability assessment capabilities.
 
