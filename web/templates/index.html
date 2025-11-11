@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HostHawk - Network Scanner</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <!-- Navigation -->
+    <nav class="bg-indigo-700 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center">
+                <i class="fas fa-shield-alt text-2xl mr-3"></i>
+                <h1 class="text-xl font-bold">HostHawk</h1>
+            </div>
+            <div>
+                <span class="text-sm">v1.0.0</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-6">
+        <div class="flex flex-col lg:flex-row gap-6">
+            <!-- Left Sidebar -->
+            <div class="w-full lg:w-1/4">
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-lg font-semibold mb-4 text-gray-800">New Scan</h2>
+                    
+                    <form id="scanForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Scan Type</label>
+                            <select id="scanType" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="port_scan">Port Scan</option>
+                                <option value="vulnerability_scan">Vulnerability Scan</option>
+                                <option value="network_scan">Network Scan</option>
+                                <option value="snmp_scan">SNMP Scan</option>
+                            </select>
+                        </div>
+
+                        <div id="targetGroup">
+                            <label id="targetLabel" class="block text-sm font-medium text-gray-700 mb-1">Target</label>
+                            <input type="text" id="target" placeholder="e.g., 192.168.1.1 or example.com" 
+                                   class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+
+                        <div id="portsGroup" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Ports</label>
+                            <input type="text" id="ports" placeholder="e.g., 1-1024 or 80,443,8080" 
+                                   class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
+                                   value="1-1024">
+                        </div>
+
+                        <button type="submit" 
+                                class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                            <i class="fas fa-search mr-2"></i> Start Scan
+                        </button>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-lg font-semibold mb-4 text-gray-800">Recent Scans</h2>
+                    <div id="recentScans" class="space-y-2">
+                        <div class="text-center text-gray-500 py-4">
+                            <p>No recent scans</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="w-full lg:w-3/4">
+                <!-- Scan Results -->
+                <div id="scanResults" class="bg-white rounded-lg shadow-md p-6 mb-6 hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-gray-800">Scan Results</h2>
+                        <div class="flex space-x-2">
+                            <button id="exportJson" class="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 py-1 px-3 rounded-md">
+                                <i class="fas fa-file-export mr-1"></i> JSON
+                            </button>
+                            <button id="exportPdf" class="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 py-1 px-3 rounded-md">
+                                <i class="fas fa-file-pdf mr-1"></i> PDF
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="scanProgress" class="mb-6">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm font-medium text-gray-700" id="currentTask">Initializing scan...</span>
+                            <span class="text-sm font-medium text-gray-700" id="progressText">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div id="progressBar" class="bg-indigo-600 h-2.5 rounded-full" style="width: 0%"></div>
+                        </div>
+                        <div class="mt-1 text-right text-xs text-gray-500">
+                            <span id="progressCount">0/0</span>
+                        </div>
+                    </div>
+
+                    <div id="resultsContainer" class="space-y-6">
+                        <!-- Results will be dynamically inserted here -->
+                    </div>
+                </div>
+
+                <!-- Dashboard Overview -->
+                <div id="dashboardOverview" class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-6 text-gray-800">Dashboard</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <!-- Network Scans Card -->
+                        <div class="bg-indigo-50 p-6 rounded-lg border border-indigo-100 hover:shadow-md transition-shadow duration-300">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="p-3 rounded-full bg-indigo-100 text-indigo-600 mr-4">
+                                        <i class="fas fa-network-wired text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Network Scans</p>
+                                        <h3 class="text-2xl font-bold text-gray-800" id="networkScansCount">0</h3>
+                                    </div>
+                                </div>
+                                <div class="text-indigo-600">
+                                    <i class="fas fa-arrow-up text-sm"></i>
+                                    <span class="text-xs font-medium" id="networkScansTrend">0%</span>
+                                </div>
+                            </div>
+                            <div class="mt-3 text-xs text-gray-500">
+                                <span id="lastNetworkScan">Last scan: Never</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Vulnerability Scans Card -->
+                        <div class="bg-green-50 p-6 rounded-lg border border-green-100 hover:shadow-md transition-shadow duration-300">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
+                                        <i class="fas fa-shield-alt text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Vulnerability Scans</p>
+                                        <h3 class="text-2xl font-bold text-gray-800" id="vulnScansCount">0</h3>
+                                    </div>
+                                </div>
+                                <div class="text-green-600">
+                                    <i class="fas fa-arrow-up text-sm"></i>
+                                    <span class="text-xs font-medium" id="vulnScansTrend">0%</span>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div class="flex justify-between text-xs text-gray-500 mb-1">
+                                    <span>Critical: <span id="criticalVulns" class="font-medium">0</span></span>
+                                    <span>High: <span id="highVulns" class="font-medium">0</span></span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                    <div id="vulnSeverityBar" class="bg-gradient-to-r from-red-500 to-yellow-400 h-1.5 rounded-full" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Hosts Discovered Card -->
+                        <div class="bg-blue-50 p-6 rounded-lg border border-blue-100 hover:shadow-md transition-shadow duration-300">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
+                                        <i class="fas fa-server text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Hosts Discovered</p>
+                                        <h3 class="text-2xl font-bold text-gray-800" id="hostsCount">0</h3>
+                                    </div>
+                                </div>
+                                <div class="text-blue-600">
+                                    <i class="fas fa-arrow-up text-sm"></i>
+                                    <span class="text-xs font-medium" id="hostsTrend">0%</span>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div class="flex justify-between text-xs text-gray-500">
+                                    <span>Up: <span id="hostsUp" class="font-medium">0</span></span>
+                                    <span>Down: <span id="hostsDown" class="font-medium">0</span></span>
+                                    <span>Unknown: <span id="hostsUnknown" class="font-medium">0</span></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Open Ports Card -->
+                        <div class="bg-purple-50 p-6 rounded-lg border border-purple-100 hover:shadow-md transition-shadow duration-300">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
+                                        <i class="fas fa-plug text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Open Ports</p>
+                                        <h3 class="text-2xl font-bold text-gray-800" id="openPortsCount">0</h3>
+                                    </div>
+                                </div>
+                                <div class="text-purple-600">
+                                    <i class="fas fa-arrow-up text-sm"></i>
+                                    <span class="text-xs font-medium" id="portsTrend">0%</span>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div class="flex justify-between text-xs text-gray-500">
+                                    <span>Top Port: <span id="topPort" class="font-medium">-</span></span>
+                                    <span>Services: <span id="uniqueServices" class="font-medium">0</span></span>
+                                </div>
+                            </div>
+                        </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-purple-50 p-6 rounded-lg border border-purple-100">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
+                                    <i class="fas fa-bug text-xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-500">Vulnerabilities Found</p>
+                                    <h3 class="text-2xl font-bold text-gray-800" id="vulnsCount">0</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-lg border border-gray-200">
+                            <h3 class="font-medium text-gray-800 mb-4">Recent Activity</h3>
+                            <div id="recentActivity" class="space-y-4">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
+                                        <i class="fas fa-info-circle"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm text-gray-600">No recent activity</p>
+                                        <p class="text-xs text-gray-400">Just now</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-lg border border-gray-200">
+                            <h3 class="font-medium text-gray-800 mb-4">Quick Actions</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button class="quick-action-btn bg-indigo-50 text-indigo-700 hover:bg-indigo-100" data-scan-type="port_scan">
+                                    <i class="fas fa-search text-indigo-500"></i>
+                                    <span>Quick Port Scan</span>
+                                </button>
+                                <button class="quick-action-btn bg-green-50 text-green-700 hover:bg-green-100" data-scan-type="vulnerability_scan">
+                                    <i class="fas fa-shield-alt text-green-500"></i>
+                                    <span>Vulnerability Scan</span>
+                                </button>
+                                <button class="quick-action-btn bg-blue-50 text-blue-700 hover:bg-blue-100" data-scan-type="network_scan">
+                                    <i class="fas fa-network-wired text-blue-500"></i>
+                                    <span>Network Scan</span>
+                                </button>
+                                <button class="quick-action-btn bg-purple-50 text-purple-700 hover:bg-purple-100" data-scan-type="snmp_scan">
+                                    <i class="fas fa-broadcast-tower text-purple-500"></i>
+                                    <span>SNMP Scan</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="reportModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl w-11/12 md:w-3/4 lg:w-2/3 max-h-[80vh] flex flex-col">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 class="text-lg font-semibold text-gray-800">Scan Report</h3>
+                <button id="closeModal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-auto flex-grow">
+                <iframe id="reportFrame" class="w-full h-full border-0" sandbox="allow-same-origin"></iframe>
+            </div>
+            <div class="p-4 border-t flex justify-end space-x-3">
+                <button id="printReport" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200">
+                    <i class="fas fa-print mr-2"></i>Print
+                </button>
+                <button id="downloadReport" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                    <i class="fas fa-download mr-2"></i>Download
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

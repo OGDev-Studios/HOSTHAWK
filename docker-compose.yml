@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  hosthawk:
+    build: .
+    container_name: hosthawk
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./logs:/app/logs
+      - ./output:/app/output
+      - ./reports:/app/reports
+    environment:
+      - HOSTHAWK_LOG_LEVEL=INFO
+      - HOSTHAWK_THREADS=50
+      - HOSTHAWK_TIMEOUT=2.0
+      - FLASK_HOST=0.0.0.0
+      - FLASK_PORT=5000
+    networks:
+      - hosthawk-network
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+
+networks:
+  hosthawk-network:
+    driver: bridge

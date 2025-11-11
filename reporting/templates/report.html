@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HostHawk Scan Report - {{ report.scan_date }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --info: #17a2b8;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --gray: #6c757d;
+            --light-gray: #e9ecef;
+            --border: #dee2e6;
+            --white: #ffffff;
+            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            --border-radius: 4px;
+            --box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            color: var(--dark);
+            background-color: #f5f7fa;
+            font-size: 14px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        a {
+            color: var(--secondary);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        a:hover {
+            color: var(--primary);
+            text-decoration: underline;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        h1 { font-size: 2rem; }
+        h2 { font-size: 1.75rem; }
+        h3 { font-size: 1.5rem; }
+        h4 { font-size: 1.25rem; }
+
+        p {
+            margin-bottom: 1rem;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: var(--white);
+            padding: 1.5rem 0;
+            margin-bottom: 2rem;
+            box-shadow: var(--box-shadow);
+        }
+
+        .scan-info {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: var(--box-shadow);
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            line-height: 1;
+        }
+
+        .stat-label {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background-color: var(--light);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+
+        tr:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+
+        .vulnerability-item {
+            border-left: 4px solid var(--gray);
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+            background-color: var(--white);
+            border-radius: 0 var(--border-radius) var(--border-radius) 0;
+            box-shadow: var(--box-shadow);
+        }
+
+        .vulnerability-item h3 {
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+        }
+
+        .vuln-meta {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
+            color: var(--gray);
+        }
+
+        .vuln-details {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px dashed var(--border);
+            font-size: 0.9rem;
+        }
+
+        .severity-critical { border-left-color: var(--danger); }
+        .severity-high { border-left-color: #fd7e14; }
+        .severity-medium { border-left-color: var(--warning); }
+        .severity-low { border-left-color: var(--info); }
+        .severity-info { border-left-color: var(--gray); }
+
+        .severity-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .host-card {
+            margin-bottom: 2rem;
+            border: 1px solid var(--border);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            background: var(--white);
+        }
+
+        .host-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            background-color: var(--light);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .host-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .host-status.online {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: var(--success);
+        }
+
+        .host-status.offline {
+            background-color: rgba(108, 117, 125, 0.1);
+            color: var(--gray);
+        }
+
+        .host-info {
+            padding: 1rem 1.5rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .ports {
+            overflow-x: auto;
+        }
+
+        .port-state {
+            padding: 0.15rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .port-state.open {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: var(--success);
+        }
+
+        .port-state.closed, .port-state.filtered {
+            background-color: rgba(108, 117, 125, 0.1);
+            color: var(--gray);
+        }
+
+        .vulnerability-row {
+            background-color: rgba(220, 53, 69, 0.05);
+        }
+
+        .vulnerability-row ul {
+            margin: 0.5rem 0 0 1.5rem;
+        }
+
+        .vuln-severity-critical { color: var(--danger); font-weight: 600; }
+        .vuln-severity-high { color: #fd7e14; font-weight: 600; }
+        .vuln-severity-medium { color: #d39e00; font-weight: 600; }
+        .vuln-severity-low { color: var(--info); }
+
+        footer {
+            background-color: var(--dark);
+            color: var(--light);
+            padding: 2rem 0;
+            margin-top: 3rem;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .disclaimer {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .host-info {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .scan-info {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>HostHawk Network Scan Report</h1>
+            <div class="scan-info">
+                <div>Scan Date: <strong>{{ report.scan_date }}</strong></div>
+                <div>Generated by: <strong>HostHawk v1.0.0</strong></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="summary">
+            <h2>Scan Summary</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.total_hosts }}</div>
+                    <div class="stat-label">Hosts Scanned</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.open_ports }}</div>
+                    <div class="stat-label">Open Ports</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.services_identified }}</div>
+                    <div class="stat-label">Services Identified</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.vulnerabilities_found }}</div>
+                    <div class="stat-label">Vulnerabilities Found</div>
+                </div>
+            </div>
+        </section>
+
+        {% if stats.vulnerabilities_found > 0 %}
+        <section class="vulnerabilities">
+            <h2>Vulnerabilities</h2>
+            <div class="severity-chart">
+                <canvas id="vulnChart"></canvas>
+            </div>
+            
+            <div class="vulnerability-list">
+                {% for vuln in vulnerabilities %}
+                <div class="vulnerability-item severity-{{ vuln.severity|lower }}">
+                    <h3>{{ vuln.name }}</h3>
+                    <div class="vuln-meta">
+                        <span class="severity-badge">{{ vuln.severity }}</span>
+                        <span>Affected: {{ vuln.affected_hosts|join(', ') }}</span>
+                    </div>
+                    <p>{{ vuln.description }}</p>
+                    <div class="vuln-details">
+                        <div><strong>CVSS Score:</strong> {{ vuln.cvss_score|default('N/A') }}</div>
+                        <div><strong>Solution:</strong> {{ vuln.solution|default('No solution provided') }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="hosts">
+            <h2>Scanned Hosts</h2>
+            {% for host in report.hosts %}
+            <div class="host-card">
+                <div class="host-header">
+                    <h3>{{ host.ip }}</h3>
+                    <span class="host-status {{ 'online' if host.status == 'up' else 'offline' }}">
+                        {{ host.status|upper }}
+                    </span>
+                </div>
+                
+                {% if host.mac %}
+                <div class="host-info">
+                    <div><strong>MAC:</strong> {{ host.mac }}</div>
+                    {% if host.vendor %}<div><strong>Vendor:</strong> {{ host.vendor }}</div>{% endif %}
+                    {% if host.hostname %}<div><strong>Hostname:</strong> {{ host.hostname }}</div>{% endif %}
+                    {% if host.os %}<div><strong>OS:</strong> {{ host.os }}</div>{% endif %}
+                </div>
+                {% endif %}
+
+                {% if host.ports %}
+                <div class="ports">
+                    <h4>Open Ports</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Port</th>
+                                <th>Protocol</th>
+                                <th>Service</th>
+                                <th>Version</th>
+                                <th>State</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for port in host.ports %}
+                            <tr>
+                                <td>{{ port.port }}</td>
+                                <td>{{ port.protocol|upper|default('TCP') }}</td>
+                                <td>{{ port.service.name|default('unknown') if port.service else 'unknown' }}</td>
+                                <td>{{ port.service.version|default('-') if port.service and port.service.version else '-' }}</td>
+                                <td><span class="port-state {{ port.state }}">{{ port.state|upper }}</span></td>
+                            </tr>
+                            {% if port.vulnerabilities %}
+                            <tr class="vulnerability-row">
+                                <td colspan="5">
+                                    <strong>Vulnerabilities:</strong>
+                                    <ul>
+                                        {% for vuln in port.vulnerabilities %}
+                                        <li class="vuln-severity-{{ vuln.severity|lower }}">
+                                            {{ vuln.id }} - {{ vuln.description }}
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>Report generated by <a href="#">HostHawk</a> on {{ report.scan_date }}</p>
+            <p class="disclaimer">This report is for authorized security assessment purposes only.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Vulnerability severity chart
+        const ctx = document.getElementById('vulnChart');
+        if (ctx) {
+            const vulnData = {
+                critical: {{ vulnerabilities|selectattr('severity', 'equalto', 'Critical')|list|length|default(0) }},
+                high: {{ vulnerabilities|selectattr('severity', 'equalto', 'High')|list|length|default(0) }},
+                medium: {{ vulnerabilities|selectattr('severity', 'equalto', 'Medium')|list|length|default(0) }},
+                low: {{ vulnerabilities|selectattr('severity', 'equalto', 'Low')|list|length|default(0) }},
+                info: {{ vulnerabilities|selectattr('severity', 'equalto', 'Info')|list|length|default(0) }}
+            };
+
+            new Chart(ctx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Critical', 'High', 'Medium', 'Low', 'Info'],
+                    datasets: [{
+                        data: [
+                            vulnData.critical,
+                            vulnData.high,
+                            vulnData.medium,
+                            vulnData.low,
+                            vulnData.info
+                        ],
+                        backgroundColor: [
+                            '#dc3545',
+                            '#fd7e14',
+                            '#ffc107',
+                            '#28a745',
+                            '#17a2b8'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Vulnerability Distribution by Severity'
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
