@@ -11,9 +11,9 @@ HostHawk is an enterprisegrade, multithreaded network scanner designed for secur
 ┌─────────────────────────────────────────────────────────────┐
 │                    HostHawk Scanner                         │
 ├─────────────────────────────────────────────────────────────┤
-│  Network Discovery  →  Port Scanning  →  Service Detection │
+│  Network Discovery  →  Port Scanning  →  Service Detection  │
 │         ↓                    ↓                    ↓         │
-│  Vulnerability Scan  →  OS Fingerprint  →  Report Gen      │
+│  Vulnerability Scan  →  OS Fingerprint  →  Report Gen       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
